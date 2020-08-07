@@ -53,7 +53,7 @@ pipeline {
                     setBuildNameFromArtifactId(artifactId: artifactId)
 
                     def repoUrl = getRepoUrlFromTaskId("${artifactId.split(':')[1]}")
-                    if (repoHasStiTests(repoUrl: repoUrl, branch: env.BRANCH_NAME) {
+                    if (repoHasStiTests(repoUrl: repoUrl, branch: env.BRANCH_NAME)) {
                         testType = 'sti'
                     } else if (repoHasTmtTests(repoUrl: repoUrl, branch: env.BRANCH_NAME) {
                         testType = 'tmt'
