@@ -86,7 +86,7 @@ pipeline {
                                     "arch": "x86_64",
                                     "artifacts": [
                                         {
-                                            "id": ${artifactId.split(':')[1].toInteger()},
+                                            "id": ${artifactId.split(':')[1]},
                                             "type": "fedora-koji-build"
                                         }
                                     ]
