@@ -15,7 +15,7 @@ def pipelineMetadata = [
     ],
 ]
 def artifactId
-def testingFarmResult
+def testingFarmResult = [:]
 
 def repoUrl
 def testType
