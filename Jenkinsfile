@@ -17,6 +17,7 @@ def pipelineMetadata = [
 def artifactId
 def testingFarmResult
 
+def repoUrl
 def testType
 
 
@@ -52,7 +53,7 @@ pipeline {
 
                     setBuildNameFromArtifactId(artifactId: artifactId)
 
-                    def repoUrl = getRepoUrlFromTaskId("${artifactId.split(':')[1]}")
+                    repoUrl = getRepoUrlFromTaskId("${artifactId.split(':')[1]}")
                     if (repoHasStiTests(repoUrl: repoUrl, branch: env.BRANCH_NAME)) {
                         testType = 'sti'
                     } else if (repoHasTmtTests(repoUrl: repoUrl, branch: env.BRANCH_NAME)) {
@@ -76,8 +77,8 @@ pipeline {
                             "api_key": "${env.TESTING_FARM_API_KEY}",
                             "test": {
                                 "${testType}": {
-                                    "url": "${getGitUrl()}",
-                                    "ref": "${getGitRef()}"
+                                    "url": "${repoUrl}",
+                                    "ref": "${env.BRANCH_NAME}"
                                 }
                             },
                             "environments": [
