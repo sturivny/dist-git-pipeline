@@ -94,10 +94,10 @@ pipeline {
                             ]
                         }
                     """
-                    // def response = submitTestingFarmRequest(payload: requestPayload)
+                    def response = submitTestingFarmRequest(payload: requestPayload)
                     sendMessage(type: 'running', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: isPullRequest())
-                    // testingFarmResult = waitForTestingFarmResults(requestId: response['id'], timeout: 60)
-                    // evaluateTestingFarmResults(testingFarmResult)
+                    testingFarmResult = waitForTestingFarmResults(requestId: response['id'], timeout: 60)
+                    evaluateTestingFarmResults(testingFarmResult)
                 }
             }
         }
