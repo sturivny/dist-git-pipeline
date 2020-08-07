@@ -83,21 +83,20 @@ pipeline {
                             "environments": [
                                 {
                                     "arch": "x86_64",
-                                    "variables": {
-                                        "RELEASE_ID": "${getReleaseIdFromBranch()}",
-                                        "TASK_ID": "${artifactId.split(':')[1]}"
-                                    }
+                                    "artifacts": [
+                                        {
+                                            "id": ${artifactId.split(':')[1].toInteger()},
+                                            "type": "fedora-koji-build"
+                                        }
+                                    ]
                                 }
                             ]
                         }
                     """
                     // def response = submitTestingFarmRequest(payload: requestPayload)
-                    
                     sendMessage(type: 'running', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: isPullRequest())
-
                     // testingFarmResult = waitForTestingFarmResults(requestId: response['id'], timeout: 60)
                     // evaluateTestingFarmResults(testingFarmResult)
-
                 }
             }
         }
