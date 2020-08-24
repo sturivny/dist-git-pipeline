@@ -19,6 +19,8 @@ spec:
     env:
     - name: STR_CPU_LIMIT
       value: "6"
+    - name: HOME
+      value: "/tmp"
 """
 
 def pipelineMetadata = [
