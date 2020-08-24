@@ -1,0 +1,144 @@
+#!groovy
+@Library('fedora-pipeline-library@prototype') _
+
+import org.fedoraproject.jenkins.koji.Koji
+
+def podYAML = """
+spec:
+  containers:
+  - name: ci-runner
+    image: quay.io/bgoncalv/fedoraci-dist-git:latest
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: "2Gi"
+      requests:
+        cpu: 1
+        memory: "1Gi"
+    env:
+    - name: STR_CPU_LIMIT
+      value: "6"
+"""
+
+def pipelineMetadata = [
+    pipelineName: 'dist-git-pipeline',
+    pipelineDescription: 'Fedora dist-git pipeline',
+    testCategory: 'functional',
+    testType: 'tier0',
+    maintainer: 'Fedora CI',
+    docs: 'https://github.com/fedora-ci/dist-git-pipeline',
+    contact: [
+	irc: '#fedora-ci',
+	email: 'ci@lists.fedoraproject.org'
+    ],
+]
+
+properties([
+    pipelineTriggers(
+        [[$class: 'CIBuildTrigger',
+            noSquash: true,
+            providerData: [
+                $class: 'RabbitMQSubscriberProviderData',
+                name: 'RabbitMQ',
+                overrides: [
+                    topic: 'org.fedoraproject.prod.buildsys.task.state.change',
+                    queue: 'osci-pipelines-queue-3'
+                ],
+                checks: [
+                    [field: 'new', expectedValue: '1|CLOSED'],
+                    [field: 'owner', expectedValue: '^(?!koschei).*'],
+                    [field: 'owner', expectedValue: '^(?!bpeck/jenkins-continuous-infra.apps.ci.centos.org)'],
+                    [field: 'info.request[1]', expectedValue: 'rawhide|f.*']
+                ]
+            ]
+        ]]
+    )
+])
+
+def buildName
+def test_playbooks
+
+pipeline {
+
+    options {
+        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '500', daysToKeepStr: '', numToKeepStr: '500'))
+        timeout(time: 1, unit: 'HOURS')
+    }
+
+    agent {
+        kubernetes {
+            yaml podYAML
+            defaultContainer 'ci-runner'
+        }
+    }
+
+    parameters {
+        string(description: 'CI message', defaultValue: '{}', name: 'CI_MESSAGE')
+    }
+
+    stages {
+        stage('Prep env') {
+            steps{
+                script {
+                    def cimessage = readJSON text: env.CI_MESSAGE
+                    env.task_id = cimessage['info']['id']
+                    def koji = new Koji()
+                    def task_info = koji.getTaskInfo( cimessage['info']['id'] )
+                    env.repo = task_info.packageName
+                    env.build_target = koji.getBuildTargets( task_info.target )[0][ 'name' ]
+                    def tagMatcher = build_target =~ /(f\d+)-candidate/
+                    if (env.build_target == "rawhide") {
+                        env.release = env.build_target
+                    } else if (tagMatcher.matches()) {
+                        env.release = tagMatcher[0][1]
+                    } else {
+                        buildName = "${env.build_target}:${env.task_id}:${task_info.nvr}"
+                        currentBuild.displayName = buildName
+                        error("unsupported build target ${env.build_target}")
+                    }
+                    buildName = "${env.release}:${env.task_id}:${task_info.nvr}"
+                    currentBuild.displayName = buildName
+
+
+                    env.branch = env.release
+                    if (env.branch == "rawhide") {
+                        env.branch = "master"
+                    }
+                }
+            }
+        }
+        stage('Check tests') {
+            steps{
+                script {
+                    def params = "--repo ${env.repo} --branch ${env.branch} --namespace rpms"
+                    def logs = "get-repo"
+                    sh "python3 /tmp/checkout-repo.py ${params} --logs ${logs} || true"
+                    def result = readJSON file: "${logs}/checkout-repo.json"
+                    if (result["status"] != 0) {
+                        error(result["error_reason"])
+                    }
+                    test_playbooks = result["test_playbooks"]
+                }
+
+            }
+        }
+        stage('Schedule job') {
+            steps{
+                script {
+                    if (test_playbooks.size() > 0) {
+                        currentBuild.description = "<a href=\"https://koji.fedoraproject.org/koji/taskinfo?taskID=${env.task_id}\">Koji ${env.task_id}</a>"
+                        build job: "fedora-scratch-build-pipeline",
+                                parameters: [string(name: 'task_id', value: env.task_id),
+                                             booleanParam(name: 'dryRun', value: false)],
+                                wait: false
+                    } else {
+                        currentBuild.description = "SKIPPED"
+                    }
+                }
+
+            }
+        }
+    }
+}
+
