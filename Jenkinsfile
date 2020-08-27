@@ -188,7 +188,7 @@ pipeline {
                 KOJI_KEYTAB = credentials('fedora.keytab')
             }
             options {
-                timeout(time: 5, unit: 'MINUTES')
+                timeout(time: 8, unit: 'HOURS')
             }
             steps {
                 script {
