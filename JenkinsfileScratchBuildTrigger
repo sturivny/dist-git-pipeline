@@ -81,6 +81,9 @@ pipeline {
 
     stages {
         stage('Prep env') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
             steps{
                 script {
                     def cimessage = readJSON text: env.CI_MESSAGE
@@ -111,6 +114,9 @@ pipeline {
             }
         }
         stage('Check tests') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
             steps{
                 script {
                     def params = "--repo ${env.repo} --branch ${env.branch} --namespace rpms"
@@ -126,6 +132,9 @@ pipeline {
             }
         }
         stage('Schedule job') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
             steps{
                 script {
                     if (test_playbooks.size() > 0) {
