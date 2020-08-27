@@ -109,6 +109,9 @@ pipeline {
 
     stages {
         stage('Prepare env') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
             steps{
                 script {
                     if (params.task_id){
@@ -157,6 +160,9 @@ pipeline {
             }
         }
         stage('Get repo') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
             steps{
                 script {
                     def params = "--repo ${env.repo} --branch ${env.branch} --namespace ${env.namespace}"
@@ -181,6 +187,9 @@ pipeline {
             environment {
                 KOJI_KEYTAB = credentials('fedora.keytab')
             }
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
             steps {
                 script {
                     if (!hasTests) {
@@ -202,6 +211,9 @@ pipeline {
         }
 
         stage('Prepare qcow2') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
             steps {
                 script {
                     if (!hasTests) {
@@ -230,6 +242,9 @@ pipeline {
         }
 
         stage('nvr verify') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
             steps {
                 script {
                     if (!hasTests) {
@@ -248,6 +263,9 @@ pipeline {
         }
 
         stage('run test') {
+            options {
+                timeout(time: 8, unit: 'HOURS')
+            }
             steps {
                 script {
                     if (!hasTests) {
