@@ -51,7 +51,7 @@ properties([
                     [field: 'new', expectedValue: '1|CLOSED'],
                     [field: 'owner', expectedValue: '^(?!koschei).*'],
                     [field: 'owner', expectedValue: '^(?!bpeck/jenkins-continuous-infra.apps.ci.centos.org)'],
-                    [field: 'info.request[1]', expectedValue: 'rawhide|f.*']
+                    [field: 'info.request[1]', expectedValue: 'rawhide|f.*-candidate']
                 ]
             ]
         ]]
