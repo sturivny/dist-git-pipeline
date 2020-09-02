@@ -231,7 +231,7 @@ pipeline {
                         }
                     }
                     def logs = "prepare-qcow2"
-                    sh "python3 /tmp/virt-customize.py ${params} --install-rpms --no-sys-update --artifacts ${logs} -v || true"
+                    sh "python3 /tmp/virt-customize.py ${params} --install-rpms --no-sys-update --artifacts ${logs} || true"
                     def result = readJSON file: "${logs}/virt-customize.json"
                     if (result["status"] != 0) {
                         error(result["error_reason"])
