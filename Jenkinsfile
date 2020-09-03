@@ -195,7 +195,7 @@ pipeline {
                     if (!hasTests) {
                         return
                     }
-                    if (env.pr) {
+                    if (env.pr && env.namespace == "rpms") {
                         def logs = "build-pr"
                         sh "python3 /tmp/create-build.py --repo ${env.repo} --release ${env.release} --logs ${logs} -v || true"
 
@@ -219,7 +219,9 @@ pipeline {
                     if (!hasTests) {
                         return
                     }
-                    sendMessage(type: 'running', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: params.dryRun)
+                    if (artifactId) {
+                        sendMessage(type: 'running', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: params.dryRun)
+                    }
                     def params = "--release ${env.release}"
                     if (env.namespace == "rpms") {
                         params += " --task-id ${env.task_id}"
@@ -247,7 +249,7 @@ pipeline {
             }
             steps {
                 script {
-                    if (!hasTests) {
+                    if (!hasTests || env.namespace == "tests") {
                         return
                     }
                     def logs = "nvr-verify"
@@ -275,7 +277,11 @@ pipeline {
                         pb_artifact = playbook.split("\\.")[0]
                         def artifact = "${WORKSPACE}/run-tests/${pb_artifact}"
                         sh "mkdir -p ${artifact}"
-                        sh "cd ${env.repo}/tests && python3 /tmp/run-playbook.py --image ${env.qcow2_image} --playbook ${playbook} --artifacts ${artifact} -v 2>&1 | tee ${artifact}/console.txt"
+                        def test_dir = "${env.repo}/tests"
+                        if (env.namespace == "tests") {
+                            test_dir = env.repo
+                        }
+                        sh "cd ${test_dir} && python3 /tmp/run-playbook.py --image ${env.qcow2_image} --playbook ${playbook} --artifacts ${artifact} -v 2>&1 | tee ${artifact}/console.txt"
                         def result = readJSON file: "${artifact}/run-playbook.json"
                         artifacts = result["artifacts"]
                         if (result["status"] != 0) {
@@ -300,16 +306,24 @@ pipeline {
         }
         success {
             script {
-                if (hasTests) {
+                if (hasTests && artifactId) {
                     sendMessage(type: 'complete', artifactId: artifactId, pipelineMetadata: pipelineMetadata, xunit: xunit, dryRun: params.dryRun)
                 }
             }
         }
         failure {
-            sendMessage(type: 'error', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: params.dryRun)
+            script {
+                if (artifactId) {
+                    sendMessage(type: 'error', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: params.dryRun)
+                }
+            }
         }
         unstable {
-            sendMessage(type: 'complete', artifactId: artifactId, pipelineMetadata: pipelineMetadata, xunit: xunit, dryRun: params.dryRun)
+            script {
+                if (artifactId) {
+                    sendMessage(type: 'complete', artifactId: artifactId, pipelineMetadata: pipelineMetadata, xunit: xunit, dryRun: params.dryRun)
+                }
+            }
         }
     }
 }
