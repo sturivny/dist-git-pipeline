@@ -170,7 +170,8 @@ pipeline {
                         params += " --pr ${env.pr}"
                     }
                     def logs = "get-repo"
-                    sh "python3 /tmp/checkout-repo.py ${params} -v --logs ${logs}  || true"
+                    sh "mkdir -p ${logs}"
+                    sh "python3 /tmp/checkout-repo.py ${params} -v --logs ${logs} 2>&1 | tee ${logs}/console.txt"
                     def result = readJSON file: "${logs}/checkout-repo.json"
                     if (result["status"] != 0) {
                         error(result["error_reason"])
@@ -197,7 +198,8 @@ pipeline {
                     }
                     if (env.pr && env.namespace == "rpms") {
                         def logs = "build-pr"
-                        sh "python3 /tmp/create-build.py --repo ${env.repo} --release ${env.release} --logs ${logs} -v || true"
+                        sh "mkdir -p ${logs}"
+                        sh "python3 /tmp/create-build.py --repo ${env.repo} --release ${env.release} --logs ${logs} -v 2>&1 | tee ${logs}/console.txt"
 
                         def result = readJSON file: "${logs}/create-build.json"
                         if (result["status"] != 0) {
@@ -233,7 +235,8 @@ pipeline {
                         }
                     }
                     def logs = "prepare-qcow2"
-                    sh "python3 /tmp/virt-customize.py ${params} --install-rpms --no-sys-update --artifacts ${logs} || true"
+                    sh "mkdir -p ${logs}"
+                    sh "python3 /tmp/virt-customize.py ${params} --install-rpms --no-sys-update --artifacts ${logs} -v 2>&1 | tee ${logs}/console.txt"
                     def result = readJSON file: "${logs}/virt-customize.json"
                     if (result["status"] != 0) {
                         error(result["error_reason"])
@@ -253,7 +256,8 @@ pipeline {
                         return
                     }
                     def logs = "nvr-verify"
-                    sh "python3 /tmp/run-playbook.py --image ${env.qcow2_image} --playbook /tmp/rpm-verify.yml --no-check-result --artifacts ${logs} -e rpm_repo=/opt/task_repos/${env.task_id} -v || true"
+                    sh "mkdir -p ${logs}"
+                    sh "python3 /tmp/run-playbook.py --image ${env.qcow2_image} --playbook /tmp/rpm-verify.yml --no-check-result --artifacts ${logs} -e rpm_repo=/opt/task_repos/${env.task_id} -v 2>&1 | tee ${logs}/console.txt"
                     def result = readJSON file: "${logs}/run-playbook.json"
                     if (result["status"] != 0) {
                         artifacts = result["artifacts"]
