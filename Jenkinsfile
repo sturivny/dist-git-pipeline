@@ -194,6 +194,11 @@ pipeline {
             steps {
                 script {
                     if (env.pr && env.namespace == "rpms") {
+                        // task_id was passed as parameter, so no need to build an scratch build
+                        if (env.task_id) {
+                            artifactId = "koji-build:${env.task_id}"
+                            return
+                        }
                         def logs = "build-pr"
                         sh "mkdir -p ${logs}"
                         sh "python3 /tmp/create-build.py --repo ${env.repo} --release ${env.release} --logs ${logs} -v 2>&1 | tee ${logs}/console.txt"
