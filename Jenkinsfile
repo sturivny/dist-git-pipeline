@@ -40,7 +40,6 @@ def pipelineMetadata = [
 def buildName
 def test_playbooks
 def artifactId
-def hasTests = false
 def xunit = ""
 
 pipeline {
@@ -177,8 +176,9 @@ pipeline {
                         error(result["error_reason"])
                     }
                     test_playbooks = result["test_playbooks"]
-                    if (test_playbooks.size() > 0) {
-                        hasTests = true
+
+                    if (test_playbooks.size() == 0) {
+                        abort('Repository has no tests. Aborted.')
                     }
                 }
             }
@@ -193,9 +193,6 @@ pipeline {
             }
             steps {
                 script {
-                    if (!hasTests) {
-                        return
-                    }
                     if (env.pr && env.namespace == "rpms") {
                         def logs = "build-pr"
                         sh "mkdir -p ${logs}"
@@ -218,9 +215,6 @@ pipeline {
             }
             steps {
                 script {
-                    if (!hasTests) {
-                        return
-                    }
                     if (artifactId) {
                         sendMessage(type: 'running', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: params.dryRun)
                     }
@@ -252,7 +246,7 @@ pipeline {
             }
             steps {
                 script {
-                    if (!hasTests || env.namespace == "tests") {
+                    if (env.namespace == "tests") {
                         return
                     }
                     def logs = "nvr-verify"
@@ -274,9 +268,6 @@ pipeline {
             }
             steps {
                 script {
-                    if (!hasTests) {
-                        return
-                    }
                     test_playbooks.each { playbook ->
                         pb_artifact = playbook.split("\\.")[0]
                         def artifact = "${WORKSPACE}/run-tests/${pb_artifact}"
@@ -310,7 +301,7 @@ pipeline {
         }
         success {
             script {
-                if (hasTests && artifactId) {
+                if (artifactId) {
                     sendMessage(type: 'complete', artifactId: artifactId, pipelineMetadata: pipelineMetadata, xunit: xunit, dryRun: params.dryRun)
                 }
             }
@@ -319,6 +310,13 @@ pipeline {
             script {
                 if (artifactId) {
                     sendMessage(type: 'error', artifactId: artifactId, pipelineMetadata: pipelineMetadata, dryRun: params.dryRun)
+                }
+            }
+        }
+        aborted {
+            script {
+                if (artifactId) {
+                    sendMessage(type: 'error', artifactId: artifactId, pipelineMetadata: pipelineMetadata, xunit: xunit, dryRun: params.dryRun)
                 }
             }
         }
