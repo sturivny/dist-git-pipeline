@@ -19,12 +19,11 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-
+  
       # Runs check for all the Jenkins files
       - name: Check JenkinsfileScratchBuildTrigger file
-        run: |
-          bash ./tests/pipeline_linter.sh -t ${{ secrets.OSCI_JENKINS_2_FEDORAPROJECT }} -f JenkinsfileScratchBuildTrigger
+        run: bash ./tests/pipeline_linter.sh -t "" -f ./JenkinsfileScratchBuildTrigger
 
       - name: Check Jenkinsfile file
-        run: |
-          bash ./tests/pipeline_linter.sh -t ${{ secrets.OSCI_JENKINS_2_FEDORAPROJECT }} -f Jenkinsfile
+        run: bash ./tests/pipeline_linter.sh -t "" -f ./Jenkinsfile
+
