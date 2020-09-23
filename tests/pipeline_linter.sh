@@ -7,7 +7,7 @@ fi
 
 FILE=$1
 
-OUTPUT=$(curl -H "Authorization: OAuth " -X POST -F "jenkinsfile=<$FILE" https://osci-jenkins-2.ci.fedoraproject.org/pipeline-model-converter/validate)
+OUTPUT=$(curl -X POST -F "jenkinsfile=<$FILE" https://osci-jenkins-2.ci.fedoraproject.org/pipeline-model-converter/validate)
 
 if [[ "$OUTPUT" =~ .*"successfully validated".* ]]; then
   echo $OUTPUT
